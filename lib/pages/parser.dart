@@ -8,7 +8,11 @@ import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:video_download/utils/parser/base.dart';
 import 'package:video_download/utils/parser/platforms.dart';
 import 'package:video_download/utils/parser/tools.dart';
-import 'package:video_download/widgets/parserResultContainer.dart';
+import 'package:video_download/widgets/FloatingActionButton/DraggableFloatingActionButton.dart';
+import 'package:video_download/widgets/ParserResultContainer.dart';
+
+import '../widgets/FloatingActionButton/DragFloatingActionButtonLocation.dart';
+import '../widgets/FloatingActionButton/NoScalingAnimation.dart';
 
 class ParserPage extends StatefulWidget {
   @override
@@ -23,18 +27,25 @@ class ParserPageState extends State with WidgetsBindingObserver {
   var parseResult;
   final GlobalKey _parserResultContainerKey =
       GlobalKey<ParserResultContainerState>();
+  final GlobalKey _floatingActionButtonKey =
+      GlobalKey<DraggableFloatingActionButtonState>();
 
+  FijkPlayer player = FijkPlayer();
   late Color navbarFrontColor = Colors.white;
 
+  double downloadPercent = 0.00;
   late Widget showDownloadPercent;
   List urlParsed = [];
+  double videoContainerHeight = 400;
+
+  Offset? floatingActionButtonOffset;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance?.addObserver(this);
-    inputCtrl = TextEditingController(text: "");
-    this._detectClipboardAndPaste();
+    inputCtrl = TextEditingController(text: "https://h5.pipix.com/s/L3RtPLW/");
+    this._detectClipboardAndParse();
   }
 
   @override
@@ -44,6 +55,7 @@ class ParserPageState extends State with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    player.release();
     super.dispose();
   }
 
@@ -59,7 +71,7 @@ class ParserPageState extends State with WidgetsBindingObserver {
         // if (player.isPlayable() && player.state == FijkState.paused) {
         // player.start();
         // }
-        this._detectClipboardAndPaste();
+        this._detectClipboardAndParse();
         break;
       // 应用程序不可见，后台
       case AppLifecycleState.paused:
@@ -83,7 +95,7 @@ class ParserPageState extends State with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           "视频解析",
           style: TextStyle(
             // color: navbarFrontColor,
@@ -94,7 +106,7 @@ class ParserPageState extends State with WidgetsBindingObserver {
         elevation: 0,
         centerTitle: true,
         // backgroundColor: Color(platformMaps[platform]["color"]),
-        backgroundColor: const Color(0xfff0f0f0),
+        backgroundColor: Color(0xfff0f0f0),
         toolbarHeight: 40,
       ),
       body: GestureDetector(
@@ -105,7 +117,7 @@ class ParserPageState extends State with WidgetsBindingObserver {
         },
         child: Column(
           children: [
-            const Padding(padding: EdgeInsets.only(top: 6)),
+            Padding(padding: EdgeInsets.only(top: 6)),
             // 平台logo
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -210,7 +222,7 @@ class ParserPageState extends State with WidgetsBindingObserver {
             ),
             Expanded(
               child: Padding(
-                padding: EdgeInsets.all(10),
+                padding: const EdgeInsets.all(10),
                 child: ParserResultContainer(
                   key: _parserResultContainerKey,
                   result: this.parseResult,
@@ -221,7 +233,11 @@ class ParserPageState extends State with WidgetsBindingObserver {
           ],
         ),
       ),
-      // floatingActionButton: _floatingActionButton(),
+      floatingActionButton:
+          this.parseResult != null ? _floatingActionButton() : null,
+      floatingActionButtonLocation:
+          DragLoatingActionButtonLocation(this.floatingActionButtonOffset),
+      floatingActionButtonAnimator: NoScalingAnimation(),
     );
   }
 
@@ -251,7 +267,7 @@ class ParserPageState extends State with WidgetsBindingObserver {
   Widget _shareInput() {
     return TextField(
       controller: inputCtrl,
-      cursorColor: Color(0xFF000000),
+      cursorColor: const Color(0xFF000000),
       cursorWidth: 1.0,
       cursorHeight: 20,
       onChanged: (v) {
@@ -261,7 +277,7 @@ class ParserPageState extends State with WidgetsBindingObserver {
         FocusScope.of(context).requestFocus(FocusNode());
         handleParse();
       },
-      decoration: InputDecoration(
+      decoration: const InputDecoration(
         hintText: "分享链接",
         hintStyle: TextStyle(fontSize: 13),
         focusedBorder: OutlineInputBorder(
@@ -371,15 +387,12 @@ class ParserPageState extends State with WidgetsBindingObserver {
     }
     this.platformInstance = instance;
     SmartDialog.showLoading(msg: "请稍候", backDismiss: false);
-    try {
-      instance.analyze(share).then((value) {
-        setState(() {
-          this.parseResult = value;
-        });
-      }, onError: (e) => SmartDialog.showToast(e.toString())).whenComplete(() => SmartDialog.dismiss());
-    } catch (e) {
-      SmartDialog.showToast(e.toString());
-    }
+    instance.analyze(share).then((value) {
+      SmartDialog.dismiss();
+      setState(() {
+        this.parseResult = value;
+      });
+    });
   }
 
   void handleDetectClipboard() {
@@ -416,12 +429,20 @@ class ParserPageState extends State with WidgetsBindingObserver {
     }
   }
 
-  Draggable _floatingActionButton() {
-    return Draggable(
-      feedback: _downloadButton(),
-      child: _downloadButton(),
-      onDragStarted: () {},
-      onDragEnd: (details) => print(details.offset),
+  Widget _floatingActionButton() {
+    return DraggableFloatingActionButton(
+      key: this._floatingActionButtonKey,
+      child: const Text("下载"),
+      onPressed: () {
+        SmartDialog.showToast("开发中...");
+      },
+      onDragEnd: () => setState(() {
+        DraggableFloatingActionButtonState? ABState = this
+            ._floatingActionButtonKey
+            .currentState as DraggableFloatingActionButtonState;
+        // 将按钮的位置信息保存
+        this.floatingActionButtonOffset = ABState.floatingActionButtonOffset;
+      }),
     );
   }
 
@@ -463,7 +484,7 @@ class ParserPageState extends State with WidgetsBindingObserver {
     );
   }
 
-  void _detectClipboardAndPaste() {
+  void _detectClipboardAndParse() {
     Clipboard.getData(Clipboard.kTextPlain).then((value) {
       String? str = value?.text;
       if (str == null) {
@@ -473,24 +494,14 @@ class ParserPageState extends State with WidgetsBindingObserver {
       if (d == null || this.platformMaps[d["platform"]] == null) {
         return;
       }
-      if (!urlParsed.contains(str)) {
+      if (urlParsed.indexOf(str) < 0) {
         _clipboardTips(d);
       } else if (inputCtrl.value.text != str) {
-        setState(() {
-          this.platform = d["platform"];
-        });
         inputCtrl.text = str;
         SmartDialog.showToast(
             "检测到剪切板中有 " + d["platform_name"] + " 的分享链接，已自动填入");
       }
     });
-  }
-
-  FloatingActionButton _downloadButton() {
-    return FloatingActionButton(
-      child: Text("下载"),
-      onPressed: () {},
-    );
   }
 
   resetParse() {
