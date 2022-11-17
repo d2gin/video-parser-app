@@ -8,9 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
+
 import '../utils/parser/base.dart';
 import '../utils/parser/tools.dart';
-import 'downloadProgress.dart';
+import 'DownloadProgress.dart';
 
 class ParserResultContainer extends StatefulWidget {
   var result;
@@ -294,7 +295,7 @@ class ParserResultContainerState extends State<ParserResultContainer> {
   }
 
   Widget _menuSheets(sheets) {
-    var sheetStyle = BoxDecoration(
+    var sheetStyle = const BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.all(Radius.circular(5.0)),
     );
@@ -304,18 +305,19 @@ class ParserResultContainerState extends State<ParserResultContainer> {
         children: [
           Expanded(
             child: Padding(
-                padding: EdgeInsets.only(bottom: 9),
+                padding: const EdgeInsets.only(bottom: 9),
                 child: GestureDetector(
                   onTapUp: (TapUpDetails) {
+                    // 触发点击菜单项的事件
                     sheet["click"]?.call(sheet["code"]);
                   },
                   child: Container(
-                    padding: EdgeInsets.all(10.0),
+                    padding: const EdgeInsets.all(10.0),
                     child: Text(
                       sheet["title"],
                       textAlign: TextAlign.center,
                       style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     decoration: sheetStyle,
                   ),
